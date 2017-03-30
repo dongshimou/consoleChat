@@ -8,7 +8,7 @@ private:
     std::queue<T>m_queue;
     SpinLock m_lock;
 public:
-    messageQueue()noexcept;
+    explicit messageQueue()noexcept;
     messageQueue(const messageQueue&) = delete;
     messageQueue& operator=(const messageQueue&) = delete;
     messageQueue(messageQueue&& other)noexcept;

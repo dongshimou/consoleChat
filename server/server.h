@@ -48,8 +48,8 @@ private:
     static void close(SOCKET socket);
 public:
     explicit server()noexcept;
-    server(const server&other) = delete;
-    server operator+(const server&other) = delete;
+    server(const server&) = delete;
+    server& operator=(const server&) = delete;
     server(server&&other)noexcept;
     ~server();
     void loop(bool multithread=true);
