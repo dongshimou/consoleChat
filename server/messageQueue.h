@@ -9,9 +9,9 @@ private:
     SpinLock m_lock;
 public:
     messageQueue()noexcept;
-    messageQueue(const messageQueue& other) = delete;
-    messageQueue operator=(const messageQueue& other) = delete;
-    messageQueue(const messageQueue&& other)noexcept;
+    messageQueue(const messageQueue&) = delete;
+    messageQueue& operator=(const messageQueue&) = delete;
+    messageQueue(messageQueue&& other)noexcept;
     T front();
     T back();
     void pop();
@@ -26,17 +26,25 @@ inline messageQueue<T>::messageQueue() noexcept { }
 
 template<typename T>
 inline messageQueue<T>::messageQueue(const messageQueue && other) noexcept {
+    m_lock.lock();
     m_queue.swap(other.m_queue);
+    m_lock.unlock();
 }
 
 template<typename T>
 inline T messageQueue<T>::front() {
-    return m_queue.front();
+    m_lock.lock();
+    auto f=m_queue.front();
+    m_lock.unlock();
+    return std::move(f);
 }
 
 template<typename T>
 inline T messageQueue<T>::back() {
-    return m_queue.back();
+    m_lock.lock();
+    auto f=m_queue.back();
+    m_lock.unlock();
+    return std::move(f);
 }
 
 template<typename T>
