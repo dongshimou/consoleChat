@@ -13,7 +13,7 @@
 #include <map>
 #include <thread>
 #include <future>
-
+#include <chrono>
 struct user {
     SOCKET socket;
     std::string name;
@@ -24,12 +24,14 @@ struct user {
 };
 struct msg {
     SOCKET origin, target;
-    byte* data;
+    byte* data=nullptr;
+    ~msg() {
+        delete[] data;
+    }
 };
 class server {
 private:
-    std::map<SOCKET,user>socket_user;
-    std::map<user, SOCKET>user_socket;
+
 
     char* m_hostname=nullptr;
     uint32_t m_port=2333;
@@ -39,11 +41,10 @@ private:
     hostent *m_hent=nullptr;
     sockaddr_in m_serverAddr;
 
-    messageQueue<msg>m_queue;
 private:
     bool init();
-    static void send();
-    static void revc(SOCKET socket);
+    static void send_data();
+    static void revc_data(SOCKET socket);
     static void alive();
     static void close(SOCKET socket);
 public:
