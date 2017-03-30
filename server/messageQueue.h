@@ -11,7 +11,7 @@ public:
     explicit messageQueue()noexcept;
     messageQueue(const messageQueue&) = delete;
     messageQueue& operator=(const messageQueue&) = delete;
-    messageQueue(messageQueue&& other)noexcept;
+    messageQueue(messageQueue&&) = delete;
     T front();
     T back();
     void pop();
@@ -23,13 +23,6 @@ public:
 
 template<typename T>
 inline messageQueue<T>::messageQueue() noexcept { }
-
-template<typename T>
-inline messageQueue<T>::messageQueue(const messageQueue && other) noexcept {
-    m_lock.lock();
-    m_queue.swap(other.m_queue);
-    m_lock.unlock();
-}
 
 template<typename T>
 inline T messageQueue<T>::front() {
