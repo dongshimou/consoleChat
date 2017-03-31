@@ -16,7 +16,7 @@ private:
     int m_err;
     sockaddr_in serverAddr;
     hostent *m_host=nullptr;
-    char *m_hostname=nullptr;
+    char m_hostname[ 64 ] = { 0 };
     uint32_t m_port;
 
     bool init();

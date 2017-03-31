@@ -8,20 +8,25 @@ bool client::init() {
         std::cout << "error is " << m_err << '\n';
         return false;
     }
-    m_hostname = new char[ 64 ];
     std::cout << "\ninput server ip :";
-    //std::cin >> m_hostname;
-    m_hostname = "127.0.0.1";
+#ifdef _DEBUG
+    strcpy(m_hostname,"127.0.0.1");
+#else
+    std::cin >> m_hostname;
+#endif // _DEBUG
     std::cout << "\ninput server port :";
-    //std::cin >> m_port;
+#ifdef _DEBUG
     m_port = 20000;
+#else
+    std::cin >> m_port;
+#endif // DEBUG
     if (atoi(m_hostname)) {
         int ip_addr = inet_addr(m_hostname);
         m_host = gethostbyaddr((char*)&ip_addr, sizeof(int), AF_INET);
     } else { 
         m_host = gethostbyname(m_hostname);
     }
-    std::cout << m_hostname << " : " << m_port << '\n';
+    std::cout<<'\n'<< m_hostname << " : " << m_port << '\n';
     if (!m_host) {
         std::cout << "error: can't resolve host name\n";
         return false;
@@ -58,7 +63,7 @@ void client::recv_data(SOCKET socket) {
         char buffer[ 4096 ] = { 0 };
         int recvinfo = recv(socket, buffer, sizeof(buffer), 0);
         if (recvinfo < 1) {
-            std::cout << "recv error\n";
+            std::cout << "recv error,close.\n";
             return;
         }
         std::cout << buffer << '\n';
@@ -74,6 +79,5 @@ client::client() noexcept {
 }
 
 client::~client() { 
-    delete m_hostname;
     closesocket(m_client);
 }

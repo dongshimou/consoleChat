@@ -19,32 +19,33 @@ struct user {
     SOCKET socket;
     std::string name;
     std::string ip;
-    user(){ }
-    user(const char* t_name,const char*t_ip)
-        :name(t_name),ip(t_ip){ }
+    uint32_t heart = 0;
+    uint32_t timeout = 60;
+    user() { }
+    user(const char* t_name, const char*t_ip)
+        :name(t_name), ip(t_ip) { }
+    void alive() { heart = 0; }
+    void sleep() { heart++; }
+    bool is_alive() { return heart < timeout; }
 };
 struct msg {
     SOCKET origin, target;
-    char* data=nullptr;
+    char* data = nullptr;
 };
 class server {
 private:
-
-
-    char* m_hostname=nullptr;
-    uint32_t m_port=2333;
-    static const uint32_t m_clients=10;
+    char* m_hostname = nullptr;
+    uint32_t m_port = 2333;
+    static const uint32_t m_clients = 10;
     SOCKET m_listen;
-    int m_err=0;
-    hostent *m_hent=nullptr;
+    int m_err = 0;
+    hostent *m_hent = nullptr;
     sockaddr_in m_serverAddr;
-
 private:
     bool init();
     static void send_data();
     static void revc_data(SOCKET socket);
     static void alive();
-    static void close(SOCKET socket);
     static void show_client();
 public:
     explicit server()noexcept;
@@ -52,5 +53,5 @@ public:
     server& operator=(const server&) = delete;
     server(server&&other)noexcept = delete;
     ~server();
-    void loop(bool multithread=true);
+    void loop(bool multithread = true);
 };

@@ -46,7 +46,7 @@ void server::send_data() {
             int len = std::strlen(data);
             for (auto &&i : users) {
                 if (i.socket != message.origin)
-                    send(i.socket,data, len+1, 0);
+                    send(i.socket, data, len + 1, 0);
             }
             delete[] message.data;
         }
@@ -56,18 +56,20 @@ void server::send_data() {
 
 void server::revc_data(SOCKET socket) {
     while (true) {
-        char buffer[ 8192 ] = { 0 };
+        char buffer[ 4096 ] = { 0 };
         int recvinfo = recv(socket, buffer, sizeof(buffer), 0);
         if (recvinfo < 1) {
             clientNums--;
+            std::cout << socket_user[ socket ].ip << " disconnect\n";
             show_client();
             return;
         }
-        msg m;
-        m.origin = socket;
+        //std::cout <<recvinfo<< '\n';
         auto len = std::strlen(buffer);
         if (len == 0)continue;
-        m.data = new char[ len+1 ];
+        msg m;
+        m.origin = socket;
+        m.data = new char[ len + 1 ];
         std::strcpy(m.data, buffer);
         m_queue.push(m);
         std::cout << socket_user[ socket ].ip << " : " << buffer << '\n';
@@ -76,8 +78,6 @@ void server::revc_data(SOCKET socket) {
 }
 
 void server::alive() { }
-
-void server::close(SOCKET socket) { }
 
 void server::show_client() {
     std::cout << "client : " << clientNums << '\n';
