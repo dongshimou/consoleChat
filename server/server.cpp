@@ -89,7 +89,7 @@ void server::revc_data(SOCKET socket) {
 }
 
 void server::alive() {
-    int timeout = 60;
+    const int timeout = 60;
     while (true) {
         map_lock.lock();
         for (auto i = socket_user.begin();
@@ -100,9 +100,11 @@ void server::alive() {
             } else {
                 closesocket((*i).first);
                 socket_user.erase((*(i++)).first);
+                clientNums--;
             }
         }
         map_lock.unlock();
+        show_client();
         std::this_thread::sleep_for(
             std::chrono::seconds(timeout)
         );
@@ -132,6 +134,8 @@ void server::loop(bool multithread) {
     clientNums = 0;
     std::thread t_send(send_data);
     t_send.detach();
+    std::thread t_heart(alive);
+    t_heart.detach();
     std::cout << "server listen :" << m_hostname << " port :" << m_port << '\n';
     while (clientNums < m_clients) {
         show_client();
