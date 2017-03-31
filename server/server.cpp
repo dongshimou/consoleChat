@@ -1,7 +1,6 @@
 #include "server.h"
 static messageQueue<msg>m_queue;
 static std::map<SOCKET, user>socket_user;
-static std::vector<user>users;
 static std::atomic<uint32_t>clientNums;
 bool server::init() {
     m_hostname = "127.0.0.1";
@@ -44,9 +43,9 @@ void server::send_data() {
             m_queue.pop();
             auto data = message.data;
             int len = std::strlen(data);
-            for (auto &&i : users) {
-                if (i.socket != message.origin)
-                    send(i.socket, data, len + 1, 0);
+            for (auto &&i : socket_user) {
+                if (i.first!= message.origin)
+                    send(i.first, data, len + 1, 0);
             }
             delete[] message.data;
         }
@@ -61,6 +60,7 @@ void server::revc_data(SOCKET socket) {
         if (recvinfo < 1) {
             clientNums--;
             std::cout << socket_user[ socket ].ip << " disconnect\n";
+            socket_user.erase(socket);
             show_client();
             return;
         }
@@ -116,7 +116,6 @@ void server::loop(bool multithread) {
         user client("unnamed", inet_ntoa(clientAddr.sin_addr));
         client.socket = acceptfd;
         socket_user[ acceptfd ] = client;
-        users.emplace_back(client);
         if (multithread) {
             t[ clientNums ] = std::thread(revc_data, acceptfd);
         } else {
