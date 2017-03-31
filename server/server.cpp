@@ -45,7 +45,7 @@ void server::send_data() {
             auto data = message.data;
             int len = std::strlen(data);
             for (auto &&i : socket_user) {
-                if (i.first!= message.origin)
+                if (i.first != message.origin)
                     send(i.first, data, len + 1, 0);
             }
             delete[] message.data;
@@ -59,13 +59,14 @@ void server::revc_data(SOCKET socket) {
         char buffer[ 4096 ] = { 0 };
         int recvinfo = recv(socket, buffer, sizeof(buffer), 0);
         if (recvinfo < 1) {
-            clientNums--;
             std::cout << socket_user[ socket ].ip << " disconnect\n";
+            clientNums--;
             socket_user.erase(socket);
             show_client();
             return;
         }
         //std::cout <<recvinfo<< '\n';
+        socket_user[ socket ].alive();
         auto len = std::strlen(buffer);
         if (len == 0)continue;
         msg m;
@@ -78,7 +79,25 @@ void server::revc_data(SOCKET socket) {
 
 }
 
-void server::alive() { }
+//bug:map未上锁
+void server::alive() {
+    int timeout = 60;
+    while (true) {
+        for (auto i = socket_user.begin();
+             i != socket_user.end();) {
+            if ((*i).second.is_alive()) {
+                (*i).second.reset();
+                ++i;
+            } else {
+                closesocket((*i).first);
+                socket_user.erase((*(i++)).first);
+            }
+        }
+        std::this_thread::sleep_for(
+            std::chrono::seconds(timeout)
+        );
+    }
+}
 
 void server::show_client() {
     std::cout << "client : " << clientNums << '\n';
@@ -117,7 +136,7 @@ void server::loop(bool multithread) {
         client.socket = acceptfd;
         socket_user[ acceptfd ] = client;
         if (multithread) {
-            socket_thread[acceptfd] = std::thread(revc_data, acceptfd);
+            socket_thread[ acceptfd ] = std::thread(revc_data, acceptfd);
         } else {
             revc_data(acceptfd);
         }

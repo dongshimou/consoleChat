@@ -19,14 +19,13 @@ struct user {
     SOCKET socket;
     std::string name;
     std::string ip;
-    uint32_t heart = 0;
-    uint32_t timeout = 60;
+    bool heart = false;
     user() { }
     user(const char* t_name, const char*t_ip)
         :name(t_name), ip(t_ip) { }
-    void alive() { heart = 0; }
-    void sleep() { heart++; }
-    bool is_alive() { return heart < timeout; }
+    void alive() { heart = true; }
+    bool is_alive() { return heart; }
+    void reset() { heart = false; }
 };
 struct msg {
     SOCKET origin, target;
