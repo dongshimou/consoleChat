@@ -1,6 +1,7 @@
 #include "server.h"
 static messageQueue<msg>m_queue;
 static std::map<SOCKET, user>socket_user;
+static std::map<SOCKET, std::thread>socket_thread;
 static std::atomic<uint32_t>clientNums;
 bool server::init() {
     m_hostname = "127.0.0.1";
@@ -102,7 +103,6 @@ void server::loop(bool multithread) {
     clientNums = 0;
     std::thread t_send(send_data);
     t_send.detach();
-    std::thread t[ m_clients + 1 ];
     std::cout << "server listen :" << m_hostname << " port :" << m_port << '\n';
     while (clientNums < m_clients) {
         show_client();
@@ -117,7 +117,7 @@ void server::loop(bool multithread) {
         client.socket = acceptfd;
         socket_user[ acceptfd ] = client;
         if (multithread) {
-            t[ clientNums ] = std::thread(revc_data, acceptfd);
+            socket_thread[acceptfd] = std::thread(revc_data, acceptfd);
         } else {
             revc_data(acceptfd);
         }
