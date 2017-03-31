@@ -3,6 +3,7 @@ static messageQueue<msg>m_queue;
 static std::map<SOCKET, user>socket_user;
 static std::map<SOCKET, std::thread>socket_thread;
 static std::atomic<uint32_t>clientNums;
+static SpinLock map_lock;
 bool server::init() {
     m_hostname = "127.0.0.1";
     m_port = 20000;
@@ -44,10 +45,12 @@ void server::send_data() {
             m_queue.pop();
             auto data = message.data;
             int len = std::strlen(data);
+            map_lock.lock();
             for (auto &&i : socket_user) {
                 if (i.first != message.origin)
                     send(i.first, data, len + 1, 0);
             }
+            map_lock.unlock();
             delete[] message.data;
         }
         std::this_thread::sleep_for(std::chrono::microseconds(1));
@@ -60,13 +63,19 @@ void server::revc_data(SOCKET socket) {
         int recvinfo = recv(socket, buffer, sizeof(buffer), 0);
         if (recvinfo < 1) {
             std::cout << socket_user[ socket ].ip << " disconnect\n";
-            clientNums--;
+            map_lock.lock();
             socket_user.erase(socket);
+            map_lock.unlock();
+            clientNums--;
             show_client();
             return;
         }
         //std::cout <<recvinfo<< '\n';
+        std::string ip;
+        map_lock.lock();
         socket_user[ socket ].alive();
+        ip = socket_user[ socket ].ip;
+        map_lock.unlock();
         auto len = std::strlen(buffer);
         if (len == 0)continue;
         msg m;
@@ -74,15 +83,15 @@ void server::revc_data(SOCKET socket) {
         m.data = new char[ len + 1 ];
         std::strcpy(m.data, buffer);
         m_queue.push(m);
-        std::cout << socket_user[ socket ].ip << " : " << buffer << '\n';
+        std::cout << ip << " : " << buffer << '\n';
     }
 
 }
 
-//bug:map未上锁
 void server::alive() {
     int timeout = 60;
     while (true) {
+        map_lock.lock();
         for (auto i = socket_user.begin();
              i != socket_user.end();) {
             if ((*i).second.is_alive()) {
@@ -93,6 +102,7 @@ void server::alive() {
                 socket_user.erase((*(i++)).first);
             }
         }
+        map_lock.unlock();
         std::this_thread::sleep_for(
             std::chrono::seconds(timeout)
         );
@@ -134,7 +144,9 @@ void server::loop(bool multithread) {
         std::cout << "Accepted from client:" << inet_ntoa(clientAddr.sin_addr) << '\n';
         user client("unnamed", inet_ntoa(clientAddr.sin_addr));
         client.socket = acceptfd;
+        map_lock.lock();
         socket_user[ acceptfd ] = client;
+        map_lock.unlock();
         if (multithread) {
             socket_thread[ acceptfd ] = std::thread(revc_data, acceptfd);
         } else {
