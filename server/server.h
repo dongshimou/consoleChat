@@ -6,6 +6,7 @@
 #include <WinSock2.h>
 #include <cstdio>
 #include <string>
+#include <vector>
 #include <iostream>
 #include <cstring>
 #include <WS2tcpip.h>
@@ -24,10 +25,7 @@ struct user {
 };
 struct msg {
     SOCKET origin, target;
-    byte* data=nullptr;
-    ~msg() {
-        delete[] data;
-    }
+    char* data=nullptr;
 };
 class server {
 private:
@@ -47,11 +45,12 @@ private:
     static void revc_data(SOCKET socket);
     static void alive();
     static void close(SOCKET socket);
+    static void show_client();
 public:
     explicit server()noexcept;
     server(const server&) = delete;
     server& operator=(const server&) = delete;
-    server(server&&other)noexcept;
+    server(server&&other)noexcept = delete;
     ~server();
     void loop(bool multithread=true);
 };

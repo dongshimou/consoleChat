@@ -8,25 +8,27 @@ bool client::init() {
         std::cout << "error is " << m_err << '\n';
         return false;
     }
-    hostname = new char[ 64 ];
-    std::cout << "input server ip :";
-    std::cin >> hostname;
-    std::cout << "input server port :";
-    std::cin >> port;
-    if (atoi(hostname)) {
-        int ip_addr = inet_addr(hostname);
+    m_hostname = new char[ 64 ];
+    std::cout << "\ninput server ip :";
+    //std::cin >> m_hostname;
+    m_hostname = "127.0.0.1";
+    std::cout << "\ninput server port :";
+    //std::cin >> m_port;
+    m_port = 20000;
+    if (atoi(m_hostname)) {
+        int ip_addr = inet_addr(m_hostname);
         m_host = gethostbyaddr((char*)&ip_addr, sizeof(int), AF_INET);
     } else { 
-        m_host = gethostbyname(hostname);
+        m_host = gethostbyname(m_hostname);
     }
-    std::cout << hostname << " : " << port << '\n';
+    std::cout << m_hostname << " : " << m_port << '\n';
     if (!m_host) {
         std::cout << "error: can't resolve host name\n";
         return false;
     }
     serverAddr.sin_family = PF_INET;
     memcpy((char*)&serverAddr.sin_addr, m_host->h_addr, m_host->h_length);
-    serverAddr.sin_port = htons(port);
+    serverAddr.sin_port = htons(m_port);
     m_client = socket(PF_INET, SOCK_STREAM, 0);
 
     if (m_client == INVALID_SOCKET) {
@@ -72,6 +74,6 @@ client::client() noexcept {
 }
 
 client::~client() { 
-    delete hostname;
+    delete m_hostname;
     closesocket(m_client);
 }

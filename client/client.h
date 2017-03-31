@@ -16,8 +16,8 @@ private:
     int m_err;
     sockaddr_in serverAddr;
     hostent *m_host=nullptr;
-    char *hostname=nullptr;
-    uint32_t port;
+    char *m_hostname=nullptr;
+    uint32_t m_port;
 
     bool init();
     void send_data();

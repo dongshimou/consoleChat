@@ -1,7 +1,8 @@
 #include "server.h"
 static messageQueue<msg>m_queue;
 static std::map<SOCKET, user>socket_user;
-static std::map<user, SOCKET>user_socket;
+static std::vector<user>users;
+static std::atomic<uint32_t>clientNums;
 bool server::init() {
     m_hostname = "127.0.0.1";
     m_port = 20000;
@@ -42,11 +43,12 @@ void server::send_data() {
             auto message = m_queue.front();
             m_queue.pop();
             auto data = message.data;
-            int len = sizeof(data) / sizeof(byte);
-            for (auto &&i : user_socket) {
-                if (i.second != message.origin)
-                    send(i.second, reinterpret_cast<const char*>(data), len, 0);
+            int len = std::strlen(data);
+            for (auto &&i : users) {
+                if (i.socket != message.origin)
+                    send(i.socket,data, len+1, 0);
             }
+            delete[] message.data;
         }
         std::this_thread::sleep_for(std::chrono::microseconds(1));
     }
@@ -56,12 +58,19 @@ void server::revc_data(SOCKET socket) {
     while (true) {
         char buffer[ 8192 ] = { 0 };
         int recvinfo = recv(socket, buffer, sizeof(buffer), 0);
-        if (recvinfo < 1)return;
+        if (recvinfo < 1) {
+            clientNums--;
+            show_client();
+            return;
+        }
         msg m;
+        m.origin = socket;
         auto len = std::strlen(buffer);
-        m.data = new byte[ len ];
-        std::strcpy(reinterpret_cast<char*>(m.data), buffer);
-        m_queue.push(std::move(m));
+        if (len == 0)continue;
+        m.data = new char[ len+1 ];
+        std::strcpy(m.data, buffer);
+        m_queue.push(m);
+        std::cout << socket_user[ socket ].ip << " : " << buffer << '\n';
     }
 
 }
@@ -70,14 +79,16 @@ void server::alive() { }
 
 void server::close(SOCKET socket) { }
 
+void server::show_client() {
+    std::cout << "client : " << clientNums << '\n';
+}
+
 server::server() noexcept {
     if (!init())
         std::cout << "\nsome error\n";
     else
         std::cout << "\nstart server\n";
 }
-
-server::server(server && other) noexcept { }
 
 server::~server() {
     WSACleanup();
@@ -88,12 +99,13 @@ void server::loop(bool multithread) {
     SOCKET acceptfd;
     sockaddr_in clientAddr;
     int nSize;
-    int clientNums = 0;
+    clientNums = 0;
     std::thread t_send(send_data);
     t_send.detach();
     std::thread t[ m_clients + 1 ];
+    std::cout << "server listen :" << m_hostname << " port :" << m_port << '\n';
     while (clientNums < m_clients) {
-        std::cout << "client : " << clientNums << '\n';
+        show_client();
         nSize = sizeof(clientAddr);
         acceptfd = accept(m_listen, (sockaddr *)&clientAddr, &nSize);
         if (acceptfd == INVALID_SOCKET) {
@@ -101,7 +113,10 @@ void server::loop(bool multithread) {
             return;
         }
         std::cout << "Accepted from client:" << inet_ntoa(clientAddr.sin_addr) << '\n';
-        socket_user[ acceptfd ] = user("unnamed", inet_ntoa(clientAddr.sin_addr));
+        user client("unnamed", inet_ntoa(clientAddr.sin_addr));
+        client.socket = acceptfd;
+        socket_user[ acceptfd ] = client;
+        users.emplace_back(client);
         if (multithread) {
             t[ clientNums ] = std::thread(revc_data, acceptfd);
         } else {
