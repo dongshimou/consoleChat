@@ -2,10 +2,9 @@
 
 bool client::init() {
     WSADATA wsaData;
-    m_err = WSAStartup(MAKEWORD(2, 2), &wsaData);
-
-    if (m_err != 0) {
-        std::cout << "error is " << m_err << '\n';
+    auto err = WSAStartup(MAKEWORD(2, 2), &wsaData);
+    if (err != 0) {
+        std::cout << "error is " << err << '\n';
         return false;
     }
     std::cout << "\ninput server ip :";
@@ -35,13 +34,12 @@ bool client::init() {
     memcpy((char*)&serverAddr.sin_addr, m_host->h_addr, m_host->h_length);
     serverAddr.sin_port = htons(m_port);
     m_client = socket(PF_INET, SOCK_STREAM, 0);
-
     if (m_client == INVALID_SOCKET) {
         std::cout << "error: no more socket\n";
         return false;
     }
-    m_err = connect(m_client, reinterpret_cast<sockaddr*>(&serverAddr), sizeof(serverAddr));
-    if (m_err == INVALID_SOCKET) {
+    if(connect(m_client, reinterpret_cast<sockaddr*>(&serverAddr), 
+                    sizeof(serverAddr))== INVALID_SOCKET){
         std::cout << "error: can't connect the server\n";
         return false;
     }
@@ -50,7 +48,6 @@ bool client::init() {
 
 void client::send_data() { 
     std::thread t_recv(recv_data,m_client);
-    t_recv.detach();
     while (true) {
         char buffer[ 4096 ];
         std::cin.getline(buffer, 4096);

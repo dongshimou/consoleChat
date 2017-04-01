@@ -2,6 +2,6 @@
 
 int main() {
     server s;
-    s.loop(false);
+    s.loop();
     return 0;
 }

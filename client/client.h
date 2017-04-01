@@ -13,7 +13,6 @@
 class client {
 private:
     SOCKET m_client;
-    int m_err;
     sockaddr_in serverAddr;
     hostent *m_host=nullptr;
     char m_hostname[ 64 ] = { 0 };
