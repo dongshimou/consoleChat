@@ -43,8 +43,8 @@ private:
 private:
     bool init();
     static void send_data();
-    static void revc_data(SOCKET socket);
-    static void alive();
+    static void recv_data(SOCKET socket);
+    static void alive(int timeout);
     static void show_client();
 public:
     explicit server()noexcept;

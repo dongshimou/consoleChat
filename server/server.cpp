@@ -57,21 +57,25 @@ void server::send_data() {
     }
 }
 
-void server::revc_data(SOCKET socket) {
+void server::recv_data(SOCKET socket) {
     while (true) {
         char buffer[ 4096 ] = { 0 };
         int recvinfo = recv(socket, buffer, sizeof(buffer), 0);
+        std::string ip;
         if (recvinfo < 1) {
-            std::cout << socket_user[ socket ].ip << " disconnect\n";
             map_lock.lock();
-            socket_user.erase(socket);
+            if (socket_user.find(socket) != socket_user.end()) {
+                ip = socket_user[ socket ].ip;
+                socket_user.erase(socket);
+                clientNums--;
+            }
             map_lock.unlock();
-            clientNums--;
-            show_client();
+            if (ip != "") {
+                std::cout << ip << " disconnect\n";
+                show_client();
+            }
             return;
         }
-        //std::cout <<recvinfo<< '\n';
-        std::string ip;
         map_lock.lock();
         socket_user[ socket ].alive();
         ip = socket_user[ socket ].ip;
@@ -85,11 +89,9 @@ void server::revc_data(SOCKET socket) {
         m_queue.push(m);
         std::cout << ip << " : " << buffer << '\n';
     }
-
 }
 
-void server::alive() {
-    const int timeout = 60;
+void server::alive(int timeout) {
     while (true) {
         map_lock.lock();
         for (auto i = socket_user.begin();
@@ -133,9 +135,7 @@ void server::loop(bool multithread) {
     int nSize;
     clientNums = 0;
     std::thread t_send(send_data);
-    t_send.detach();
-    std::thread t_heart(alive);
-    t_heart.detach();
+    std::thread t_heart(alive, 60);
     std::cout << "server listen :" << m_hostname << " port :" << m_port << '\n';
     while (clientNums < m_clients) {
         show_client();
@@ -152,11 +152,12 @@ void server::loop(bool multithread) {
         socket_user[ acceptfd ] = client;
         map_lock.unlock();
         if (multithread) {
-            socket_thread[ acceptfd ] = std::thread(revc_data, acceptfd);
+            socket_thread[ acceptfd ] = std::thread(recv_data, acceptfd);
+            clientNums++;
         } else {
-            revc_data(acceptfd);
+            clientNums++;
+            recv_data(acceptfd);
         }
-        clientNums++;
     }
 }
 
